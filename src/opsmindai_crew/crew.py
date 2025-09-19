@@ -15,7 +15,12 @@ from opsmindai_crew.tools.github_repository_analyzer import GitHubRepositoryAnal
 from opsmindai_crew.tools.java_npe_diff_generator import JavaNpeDiffGeneratorTool
 from opsmindai_crew.tools.github_pr_test_tool import GitHubPRTestTool
 from opsmindai_crew.tools.incident_retrospective_generator import IncidentRetrospectiveGenerator
-
+from opsmindai_crew.tools.file_organizer_tool import FileOrganizerTool
+from opsmindai_crew.tools.pdf_generator_tool import PDFGeneratorTool
+from opsmindai_crew.tools.single_incident_reader import SingleIncidentReader
+from opsmindai_crew.tools.timeline_extractor import TimelineExtractor
+from opsmindai_crew.tools.slack_file_uploader import SlackFileUploader
+from opsmindai_crew.tools.file_to_base64_tool import FileToBase64Tool
 
 
 
@@ -68,7 +73,7 @@ class OpsmindaiCrewCrew:
             max_rpm=None,
             max_execution_time=None,
             llm=LLM(
-                model="ollama/deepseek-coder:latest",
+                model="ollama/llama3.2:latest",
                 temperature=0.7,
             ),
         )
@@ -111,9 +116,12 @@ class OpsmindaiCrewCrew:
             
             
             tools=[
-				IncidentRetrospectiveGenerator(),
-				IncidentDatabaseTool(),
-				SlackMessageTestTool()
+                SingleIncidentReader(),
+                TimelineExtractor(),
+                FileOrganizerTool(), 
+                PDFGeneratorTool(),
+                FileToBase64Tool(),
+                SlackFileUploader()
             ],
             reasoning=False,
             max_reasoning_attempts=None,
@@ -123,7 +131,7 @@ class OpsmindaiCrewCrew:
             max_rpm=None,
             max_execution_time=None,
             llm=LLM(
-                model="ollama/qwen2.5:7b",
+                model="ollama/qwen2.5:7b", #"ollama/llama3.2:latest",
                 temperature=0.7,
             ),
         )
