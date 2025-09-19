@@ -1,0 +1,181 @@
+---
+analyze_application_log_content:
+  description: |-
+    **LOG CONTENT ANALYSIS:**
+
+    Analyze the provided log content: `{log_content}`
+
+    **STEPS:**
+    1. Use Application Log Analyzer to parse log content
+    2. Extract incident details (timestamp, error type, class, method, line)
+    3. Classify as NullPointerException or Configuration issue
+    4. Set priority as P1/Critical
+    5. Return structured JSON with extracted data
+
+    **FOCUS:** Only extract real data from logs - no hallucination.
+  expected_output: |-
+    **STRUCTURED INCIDENT REPORT:**
+
+    For **NullPointerException** incidents:
+    ```json
+    {
+      "incident_type": "NullPointerException",
+      "priority": "P1",
+      "criticality": "Critical",
+      "timestamp": "2025-09-15 21:58:30",
+      "level": "ERROR",
+      "thread": "http-nio-8889-exec-1",
+      "logger": "dispatcherServlet",
+      "endpoint": "/api/login",
+      "message": "Request processing failed: java.lang.NullPointerException: Cannot invoke \"String.toString()\" because \"risky\" is null",
+      "errorType": "NullPointerException",
+      "exceptionClass": "java.lang.NullPointerException",
+      "rootCauseMessage": "Cannot invoke \"String.toString()\" because \"risky\" is null",
+      "className": "DemoController",
+      "methodName": "login",
+      "file": "DemoController.java",
+      "line": 40,
+      "stack": [
+        "com.ai.mind.ops.DemoController.login(DemoController.java:40)",
+        "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+        "..."
+      ],
+      "suggested_fix_type": "code",
+      "confidence": "high"
+    }
+    ```
+
+    For **Configuration** incidents:
+    ```json
+    {
+      "incident_type": "ConfigurationIssue",
+      "priority": "P1",
+      "criticality": "Critical",
+      "timestamp": "2025-09-15 22:15:18",
+      "level": "ERROR",
+      "thread": "http-nio-8889-exec-3",
+      "logger": "com.ai.mind.ops.DemoController",
+      "error_code": "BILLING_403",
+      "reason": "MissingConfig",
+      "config_key": "BILLING_API_KEY",
+      "amount": 120.0,
+      "suggested_fix_type": "configuration",
+      "confidence": "high"
+    }
+    ```
+
+    **VALIDATION:**
+    - Include parsing confidence level (high/medium/low)
+    - Report any fields that couldn't be extracted
+    - Provide clear incident classification reasoning
+  agent: alert_detection_agent
+orchestrate_incident_management_workflow:
+  description: |-
+    **INCIDENT ORCHESTRATION:**
+
+    Receive incident data from detection agent and orchestrate workflow.
+
+    **STEPS:**
+    1. Generate incident ID: INC-[type]-P1-[timestamp]
+    2. Store complete incident data in database using incident ID as key
+    3. Send Slack alert to "all-opsmindai" with incident details
+    4. Output incident ID for resolution agent
+
+    **TOOLS:** Use Current Date Tool, In-Memory Incident Database, Slack Message Test Tool
+  expected_output: "**ORCHESTRATION COMPLETION REPORT:**\n\n```json\n{\n  \"orchestration_status\":
+    \"COMPLETED\",\n  \"incident_number\": \"INC-[incident_type]-[priority]-[timestamp]\",\n
+    \ \"database_status\": \"STORED\",\n  \"slack_posting\": {\n    \"channel\": \"all-opsmindai\",\n
+    \   \"success\": true,\n    \"message_format\": \"professional_formatted\",\n
+    \   \"message_id\": \"[slack message timestamp]\",\n    \"commander_mentioned\":
+    \"@johnwangle\"\n  },\n  \"incident_summary\": {\n    \"type\": \"[incident_type]\",\n
+    \   \"priority\": \"[priority]\",\n    \"criticality\": \"[criticality_level]\",\n
+    \   \"affected_component\": \"[component_name]\",\n    \"error_description\":
+    \"[brief_description]\",\n    \"root_cause\": \"[specific_issue]\"\n  },\n  \"workflow_completion_time\":
+    \"[current_timestamp]\"\n}\n```\n\n**CRITICAL OUTPUT FOR NEXT AGENT:**\n**INCIDENT_ID_FOR_RESOLUTION:
+    INC-[incident_type]-[priority]-[timestamp]**\n\n**SUCCESS CRITERIA:**\n- ✅ Professional,
+    well-formatted Slack message posted\n- ✅ Clear incident information with emojis
+    and structure\n- ✅ @johnwangle mentioned as incident commander  \n- ✅ Complete
+    technical details included in readable format\n- ✅ Incident ID clearly provided
+    for resolution workflow"
+  agent: incident_orchestration_manager
+  context:
+  - analyze_application_log_content
+complete_incident_resolution_workflow:
+  description: |-
+    **INCIDENT RESOLUTION:**
+
+    Resolve incident using stored incident data.
+
+    **STEPS:**
+    1. Extract incident ID from orchestration output
+    2. Retrieve incident data from database
+    3. For NPE: Create GitHub PR using repository analyzer and PR creator
+    4. For Config: Provide Confluence documentation
+    5. Send Slack notification with resolution status
+    6. Update incident status in database
+
+    **REPOSITORY:** https://github.com/grrakesh/OpsMindJava (branch: main)
+  expected_output: "**INCIDENT RESOLUTION COMPLETION REPORT:**\n\n```json\n{\n  \"resolution_status\":
+    \"COMPLETED\",\n  \"incident_number\": \"[incident_id]\",\n  \"issue_type\": \"[code_fix|configuration]\",\n
+    \ \"resolution_method\": \"[github_pr|confluence_documentation]\",\n  \"database_update\":
+    \"SUCCESS\",\n  \"slack_notification\": {\n    \"channel\": \"all-opsmindai\",\n
+    \   \"success\": true,\n    \"message_id\": \"[slack_message_timestamp]\"\n  },\n
+    \ \"code_fix_details\": {\n    \"repository\": \"grrakesh/OpsMindJava\",\n    \"pr_url\":
+    \"[github_pr_url]\",\n    \"branch\": \"fix/[incident_number]\",\n    \"files_changed\":
+    \"[list_of_files]\",\n    \"root_cause\": \"[detailed_root_cause]\"\n  },\n  \"config_fix_details\":
+    {\n    \"confluence_link\": \"https://equinixjira.atlassian.net/wiki/spaces/DIBS/pages/147016122410/Playbook+Migrating+of+ConfigMap+from+Stringified+JSON+XML+to+Native+format\",\n
+    \   \"config_type\": \"[configuration_category]\", \n    \"manual_steps_required\":
+    \"ConfigMap migration from stringified JSON/XML to native format\",\n    \"awaiting_manual_intervention\":
+    true\n  },\n  \"incident_final_status\": \"[RESOLVED|DOCUMENTATION_PROVIDED]\",\n
+    \ \"resolution_timestamp\": \"[current_timestamp]\"\n}\n```\n\n**SUCCESS CRITERIA:**\n-
+    ✅ Incident data successfully retrieved from database\n- ✅ Issue type correctly
+    identified and appropriate resolution applied  \n- ✅ For code issues: GitHub PR
+    created with proper fix and documentation\n- ✅ For config issues: Official Equinix
+    ConfigMap playbook provided with clear migration steps\n- ✅ Slack notification
+    sent with resolution details and clear action items\n- ✅ Incident marked appropriately
+    in database (Resolved or Documentation Provided)\n- ✅ For config issues: Clear
+    guidance provided for ConfigMap migration and status updates\n- ✅ Complete transparency
+    and communication maintained"
+  agent: incident_fix_agent
+  context:
+  - orchestrate_incident_management_workflow
+generate_comprehensive_incident_retrospective_report:
+  description: "**INCIDENT RETROSPECTIVE WORKFLOW (TEXT-BASED):**\n\n**STEP 1: EXTRACT
+    INCIDENT ID FROM PREVIOUS TASKS**\n- Find the incident ID generated by the Incident
+    Orchestration Manager from the previous task context\n- Look for pattern: \"INC-[incident_type]-P1-[timestamp]\"
+    (e.g., \"INC-NullPointerException-P1-20250915215830\")\n\n**STEP 2: RETRIEVE COMPLETE
+    INCIDENT DATA**\n- Use In-Memory Incident Database with 'read' operation\n- **Key**:
+    The incident ID found in Step 1\n- Extract the complete incident JSON including
+    all technical details from detection and resolution\n\n**STEP 3: GENERATE COMPREHENSIVE
+    RETROSPECTIVE REPORT**  \n- Use Incident Retrospective Generator to create structured
+    report data\n- **incident_data**: Complete incident JSON from database\n- Generate
+    comprehensive analysis with all sections\n\n**STEP 4: SEND DETAILED RETROSPECTIVE
+    REPORT TO SLACK**\n- Use Slack Message Test Tool to post comprehensive report
+    to \"all-opsmindai\"\n- Include all report sections in formatted text:\n  - Executive
+    Summary with key metrics\n  - Incident Timeline \n  - Root Cause Analysis\n  -
+    Resolution Actions Taken\n  - Impact Assessment\n  - Lessons Learned\n  - Recommendations\n\n**CRITICAL
+    REQUIREMENTS:**\n- Actually USE the tools - retrieve real incident data\n- Extract
+    REAL incident ID from context\n- Generate ACTUAL retrospective content using the
+    tool\n- Post comprehensive report as formatted Slack message\n- Calculate actual
+    incident duration and metrics\n- Include specific incident details (not placeholders)"
+  expected_output: "**RETROSPECTIVE COMPLETION REPORT:**\n\n```json\n{\n  \"retrospective_completed\":
+    true,\n  \"incident_id\": \"[ACTUAL_INCIDENT_ID_FOUND]\",\n  \"incident_data_retrieved\":
+    {\n    \"database_lookup_success\": true,\n    \"incident_type\": \"[ACTUAL_INCIDENT_TYPE]\",\n
+    \   \"priority\": \"[ACTUAL_PRIORITY]\",\n    \"root_cause\": \"[ACTUAL_ROOT_CAUSE_MESSAGE]\",\n
+    \   \"affected_component\": \"[ACTUAL_COMPONENT]\"\n  },\n  \"report_generation\":
+    {\n    \"report_generated\": true,\n    \"sections_included\": [\"executive_summary\",
+    \"timeline\", \"root_cause\", \"resolution\", \"lessons\", \"recommendations\"],\n
+    \   \"generation_timestamp\": \"[ACTUAL_TIMESTAMP]\"\n  },\n  \"slack_posting\":
+    {\n    \"message_sent\": true,\n    \"message_id\": \"[ACTUAL_SLACK_MESSAGE_ID]\",\n
+    \   \"channel\": \"all-opsmindai\",\n    \"report_format\": \"comprehensive_text\"\n
+    \ },\n  \"workflow_completion\": {\n    \"status\": \"SUCCESS\",\n    \"total_execution_time\":
+    \"[ACTUAL_TIME]\",\n    \"tools_used_successfully\": [\"In-Memory Incident Database\",
+    \"Incident Retrospective Generator\", \"Slack Message Test Tool\"]\n  }\n}\n```\n\n**SUCCESS
+    VALIDATION:**\n- ✅ Incident ID extracted from context and data retrieved from
+    database\n- ✅ Comprehensive retrospective report generated with actual incident
+    information  \n- ✅ Detailed report posted to Slack with all sections and metrics\n-
+    ✅ All placeholders replaced with actual incident data\n- ✅ Report accessible to
+    stakeholders immediately in Slack channel"
+  agent: senior_incident_retrospective_analyst
+  context:
+  - complete_incident_resolution_workflow
