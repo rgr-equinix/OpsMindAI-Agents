@@ -215,5 +215,6 @@ test_results/
 # Documentation build
 docs/build/
 
-# uv lock file (keeping it for reproducible builds)
-# uv.lock is kept in version control for this project
+# UV lock file - KEEP THIS for reproducible builds
+# uv.lock contains exact dependency versions and should be committed
+# This ensures consistent environments across development, testing, and production

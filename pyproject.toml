@@ -8,6 +8,12 @@ dependencies = [
     "crewai[tools]>=0.177.0,<1.0.0",
     "fastapi",
     "uvicorn[standard]",
+    "reportlab>=4.0.0",
+    "plotly>=5.17.0",
+    "kaleido>=0.2.1",
+    "requests>=2.31.0",
+    "email-validator>=2.0.0",
+    "python-multipart>=0.0.6"
 ]
 
 [project.scripts]
