@@ -193,3 +193,12 @@ graph TD
 3. Run the platform and watch incidents detected, resolved, and reported—automatically!
 
 ---
+## 🚀 Curl
+**Pass the input for the agents to kick start**
+````curl
+curl -X POST http://localhost:8080/webhook/incident-alert \
+  -H "Content-Type: application/json" \
+  -d '{
+  "log_content": "2025-09-15 21:58:30 ERROR [http-nio-8889-exec-1] o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.NullPointerException: Cannot invoke \"String.toString()\" because \"risky\" is null] with root cause\njava.lang.NullPointerException: Cannot invoke \"String.toString()\" because \"risky\" is null\n\tat com.ai.mind.ops.DemoController.login(DemoController.java:40)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:568)"
+}'
+````
