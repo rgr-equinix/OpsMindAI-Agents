@@ -19,8 +19,7 @@ from opsmindai_crew.tools.file_organizer_tool import FileOrganizerTool
 from opsmindai_crew.tools.pdf_generator_tool import PDFGeneratorTool
 from opsmindai_crew.tools.single_incident_reader import SingleIncidentReader
 from opsmindai_crew.tools.timeline_extractor import TimelineExtractor
-from opsmindai_crew.tools.slack_file_uploader import SlackFileUploader
-from opsmindai_crew.tools.file_to_base64_tool import FileToBase64Tool
+from opsmindai_crew.tools.simple_slack_uploader import SimpleSlackUploader
 
 
 
@@ -62,7 +61,8 @@ class OpsmindaiCrewCrew:
             
             tools=[
 				IncidentDatabaseTool(),
-				CurrentDateTool()
+				CurrentDateTool(),
+				SlackMessageTestTool()
             ],
             reasoning=False,
             max_reasoning_attempts=None,
@@ -119,19 +119,18 @@ class OpsmindaiCrewCrew:
                 TimelineExtractor(),
                 FileOrganizerTool(), 
                 PDFGeneratorTool(),
-                FileToBase64Tool(),
-                SlackFileUploader()
+                SimpleSlackUploader()
             ],
             reasoning=False,
             max_reasoning_attempts=None,
             inject_date=True,
             allow_delegation=False,
-            max_iter=8,  # Reduced iterations for focused execution  
+            max_iter=25,
             max_rpm=None,
-            max_execution_time=480,  # 8 minute timeout for comprehensive reports
+            max_execution_time=None,
             llm=LLM(
-                model="gpt-4o-mini", #"ollama/llama3.2:latest", 
-                temperature=0.2,  # Lower temperature for more focused, deterministic responses
+                model="gpt-4o-mini",
+                temperature=0.7,
             ),
         )
     

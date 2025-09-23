@@ -135,90 +135,34 @@ complete_incident_resolution_workflow:
   context:
   - orchestrate_incident_management_workflow
 generate_comprehensive_incident_retrospective_report:
-  description: >
-    Generate a single professional PDF report for a specific incident_id,
-    including detailed timeline and resolution analysis.
+  description: |-
+    **INCIDENT RETROSPECTIVE REPORT (STRICT, NO HALLUCINATIONS):**
 
-  CRITICAL_REQUIREMENTS:
-    - Generate exactly one report for the provided incident_id
-    - Use tools to extract full incident and timeline data
-    - Include timeline and resolution analysis in the report
+    Generate a single comprehensive incident retrospective report for the provided `incident_id` using ONLY verified tool outputs. Do not invent or infer facts. If any field is missing, explicitly state "Not available".
 
-  EXECUTION_STEPS:
-    - Extract incident_id from complete_incident_resolution_workflow
+    **STRICT RULES:**
+    - Use `single_incident_reader` for incident data and `timeline_extractor` for timeline. Do not fabricate values.
+    - In the report summary, explicitly include all key fields from the prior context and database: `incident_id`, `severity`, `priority`, `status`, `service`, `created_date`, `resolved_date` (if present), and `resolution_details` (including PR URL when available).
+    - For any missing field, print exactly: "Not available".
+    - Do not generalize; copy values verbatim from tool outputs.
 
-    - Call single_incident_reader with incident_id to get full incident data
+    **STEPS (NON-HALLUCINATORY):**
+    1. Extract `incident_id` from previous task output.
+    2. Call `single_incident_reader` with `incident_id` and use only its JSON for metadata and `resolution_details`.
+    3. Call `timeline_extractor` with `incident_id` and include its events; if no timeline returned, note "Timeline: Not available".
+    4. Build report content containing:
+       - Executive summary that mirrors the exact values from incident data (no new facts)
+       - Full metadata section listing every available field from the database record
+       - Timeline (verbatim items or "Not available")
+       - Resolution details (verbatim; include PR URL if present)
+       - Recommendations may only summarize known issues and actions referenced in `resolution_details`; otherwise say "Not available".
+    5. Generate PDF via `pdf_generator` with filename `COE_[incident_id].pdf`.
+    6. Upload PDF directly to Slack via `simple_slack_uploader` using the PDF file path, with channel "all-opsmindai" and include the initial comment; ensure the file is visible in the channel.
+    7. Return a JSON summary echoing all included fields and Slack upload result.
 
-    - Call timeline_extractor with incident_id:
-        - Include structured timeline if available
-        - If missing, note absence and impact
+    **TOOLS:** Current Date Tool, In-Memory Incident Database, SingleIncidentReader, TimelineExtractor, PDFGeneratorTool, SimpleSlackUploader
 
-    - Create report content including:
-        - Executive summary
-        - Incident metadata (service_name, severity, status, commander, etc.)
-        - Timeline breakdown (events, durations, milestones)
-        - Resolution-focused analysis (if status is "Resolved"):
-            - Root cause, fix, code changes, prevention strategies
-            - Lessons learned and process improvements
-            - If resolution_details missing, note limitation
-        - Response team and playbook info
-        - Actionable recommendations
-    - Call pdf_generator ONCE with:
-        incident_id: [incident_id]
-        title: "Incident Retrospective Report for [incident_id]"
-        content: [comprehensive analysis including timeline]
-        output_filename: "COE_[incident_id].pdf"
-
-    - Upload PDF to Slack:
-        - Convert PDF to base64 using file_to_base64_converter
-        - Upload via slack_file_uploader with:
-            channel: 'all-opsmindai'
-            file_content: [base64_content]
-            filename: 'COE_[incident_id].pdf'
-            title: 'Incident Retrospective Report - [incident_id]'
-            initial_comment: >
-              📋 *Incident Retrospective Report Generated*
-
-              🆔 *Incident ID:* [incident_id]
-              📊 *Report Type:* Comprehensive Root Cause Analysis
-              📅 *Generated:* Today
-
-              📝 This report includes:
-              • Detailed incident analysis
-              • Timeline reconstruction
-              • Root cause identification
-              • Actionable recommendations
-              • Prevention strategies
-            filetype: 'pdf'
-            send_announcement: false
-        - Confirm successful upload with file URL
-
-  expected_output: |
-    **INCIDENT RETROSPECTIVE REPORT (SUMMARY):**
-
-    ```json
-    {
-      "incident_id": "INC-[type]-P1-[timestamp]",
-      "report": {
-        "pdf_path": "outputs/[incident_id]/COE_[incident_id].pdf",
-        "generated": true
-      },
-      "slack_upload": {
-        "success": true,
-        "file_url": "https://files.slack.com/...",
-        "channel": "C09DMPGG737"
-      },
-      "sections": [
-        "Executive Summary",
-        "Field-wise Breakdown",
-        "Incident Timeline",
-        "Root Cause Analysis",
-        "Recommendations",
-        "Conclusion"
-      ]
-    }
-    ```
-
+  expected_output: "**INCIDENT RETROSPECTIVE REPORT (SUMMARY):**\n\n```json\n{\n  \"incident_id\": \"INC-[type]-[priority]-[timestamp]\",\n  \"summary\": {\n    \"severity\": \"[verbatim or Not available]\",\n    \"priority\": \"[verbatim or Not available]\",\n    \"status\": \"[verbatim or Not available]\",\n    \"service\": \"[verbatim or Not available]\",\n    \"created_date\": \"[verbatim or Not available]\",\n    \"resolved_date\": \"[verbatim or Not available]\",\n    \"resolution_details\": \"[verbatim text; include PR URL if present]\"\n  },\n  \"report\": {\n    \"pdf_path\": \"outputs/[incident_id]/COE_[incident_id].pdf\",\n    \"generated\": true\n  },\n  \"slack_upload\": {\n    \"success\": true,\n    \"file_url\": \"https://files.slack.com/...\",\n    \"channel\": \"C09DMPGG737\"\n  },\n  \"sections\": [\n    \"Executive Summary\",\n    \"Field-wise Breakdown\",\n    \"Incident Timeline\",\n    \"Root Cause / Resolution Details\",\n    \"Recommendations\",\n    \"Conclusion\"\n  ]\n}\n```\n\n**SUCCESS CRITERIA:**\n- ✅ Uses only tool outputs; no hallucinated content\n- ✅ Explicitly includes all key prior-context fields in summary (verbatim)\n- ✅ PDF generated to expected path\n- ✅ Slack upload succeeds and returns file URL (announcement disabled)\n- ✅ Incident ID clearly provided for reporting"
   agent: senior_incident_retrospective_analyst
   context:
   - complete_incident_resolution_workflow
