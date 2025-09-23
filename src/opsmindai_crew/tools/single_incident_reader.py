@@ -20,7 +20,12 @@ class SingleIncidentReader(BaseTool):
     args_schema: Type[BaseModel] = SingleIncidentReaderInput
 
     def _run(self, incident_id: str) -> str:
+        import time
+        start_time = time.time()
+        
         try:
+            print(f"\n🔍 [REPORTING AGENT - DATABASE LOGGING] Starting incident read for: {incident_id}")
+            
             if not incident_id or incident_id.strip() == "" or incident_id.strip().upper() == "ALL" or incident_id.strip().startswith("["):
                 return json.dumps({
                     "success": False,
@@ -29,112 +34,88 @@ class SingleIncidentReader(BaseTool):
                 })
 
             db = IncidentDatabaseTool()
+            
+            # First, list ALL database rows to show current state
+            print("📋 [DATABASE STATE] Listing all incidents before report generation:")
+            all_incidents = db._run(operation="list")
+            
+            try:
+                incidents_data = json.loads(all_incidents)
+                if incidents_data.get("success") and incidents_data.get("count", 0) > 0:
+                    print(f"📊 [DATABASE STATE] Found {incidents_data['count']} incidents in database:")
+                    for i, incident in enumerate(incidents_data.get("data", []), 1):
+                        incident_id_db = incident.get("incident_id", "Unknown")
+                        title = incident.get("title", "No title")
+                        status = incident.get("status", "unknown")
+                        severity = incident.get("severity", "unknown")
+                        created_at = incident.get("created_at", "unknown")
+                        print(f"   {i}. 🆔 {incident_id_db} | 📋 {title} | 🚨 {severity} | 📊 {status} | 📅 {created_at}")
+                else:
+                    print("❌ [DATABASE STATE] No incidents found in database")
+            except json.JSONDecodeError:
+                print("⚠️ [DATABASE STATE] Could not parse incident list response")
+            
+            print(f"🎯 [TARGET INCIDENT] Now reading specific incident: {incident_id}")
+            
+            # Now read the specific incident
             result = db._run(operation="read", incident_id=incident_id)
+            
+            # Log the specific incident data
+            try:
+                result_data = json.loads(result)
+                if result_data.get("success") and "data" in result_data:
+                    incident_data = result_data["data"]
+                    print(f"✅ [TARGET INCIDENT] Successfully retrieved incident data:")
+                    print(f"   🆔 ID: {incident_data.get('incident_id', 'Unknown')}")
+                    print(f"   📋 Title: {incident_data.get('title', 'No title')}")
+                    print(f"   🚨 Severity: {incident_data.get('severity', 'unknown')}")
+                    print(f"   📊 Status: {incident_data.get('status', 'unknown')}")
+                    print(f"   🏢 Service: {incident_data.get('service_name', 'unknown')}")
+                    print(f"   👤 Commander: {incident_data.get('commander', 'unknown')}")
+                    print(f"   📞 Comm Lead: {incident_data.get('communication_lead', 'unknown')}")
+                    print(f"   📅 Created: {incident_data.get('created_at', 'unknown')}")
+                    print(f"   ✅ Resolved: {incident_data.get('resolved_at', 'not resolved')}")
+                    
+                    # Show timeline info if available
+                    timeline = incident_data.get('timeline', [])
+                    if timeline:
+                        print(f"   ⏰ Timeline Events: {len(timeline)} events")
+                    else:
+                        print(f"   ⏰ Timeline Events: No timeline data available")
+                    
+                    # ENHANCED: Check if incident is resolved and show resolution details
+                    status = incident_data.get('status', '').lower()
+                    resolution_details = incident_data.get('resolution_details')
+                    if status == 'resolved' and resolution_details:
+                        print(f"   🎯 [RESOLUTION STATUS] This incident is RESOLVED with detailed resolution information!")
+                        print(f"   📝 Resolution Details: {resolution_details}")
+                        print(f"   💡 [REPORTING GUIDANCE] Report should focus on:")
+                        print(f"      • Root cause analysis from resolution")
+                        print(f"      • Implementation details of the fix")
+                        print(f"      • Prevention strategies to avoid recurrence")
+                        print(f"      • Lessons learned from the resolution process")
+                    elif status == 'resolved':
+                        print(f"   🎯 [RESOLUTION STATUS] Incident is resolved but no resolution details available")
+                        print(f"   ⚠️ [REPORTING GUIDANCE] Limited resolution information for comprehensive analysis")
+                    else:
+                        print(f"   🔄 [INCIDENT STATUS] Incident is {status.upper()} - ongoing situation")
+                        print(f"   📊 [REPORTING GUIDANCE] Report should focus on current status and next steps")
+                        
+                    print("🚀 [REPORTING AGENT] Ready to proceed with report generation")
+                else:
+                    print(f"❌ [TARGET INCIDENT] Failed to read incident: {result_data.get('error', 'unknown error')}")
+            except json.JSONDecodeError:
+                print("⚠️ [TARGET INCIDENT] Could not parse incident read response")
+            
+            elapsed = time.time() - start_time
+            print(f"⏱️ [SingleIncidentReader] Database logging and read completed in {elapsed:.2f}s\n")
+            
             return result
         except Exception as e:
+            elapsed = time.time() - start_time
+            print(f"[SingleIncidentReader ERROR] Failed in {elapsed:.2f}s: {e}")
             return json.dumps({
                 "success": False,
                 "error": f"SingleIncidentReader failed: {str(e)}",
                 "incident_id": incident_id
             })
-
-from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
-from typing import Type, Dict, Any, Optional
-import json
-from .incident_database_tool import IncidentDatabaseTool
-
-class SingleIncidentReaderInput(BaseModel):
-    """Input schema for Single Incident Reader Tool."""
-    incident_id: str = Field(..., description="The specific incident ID to read from database")
-
-class SingleIncidentReader(BaseTool):
-    """Tool that reads exactly one incident from the database and prevents multiple calls."""
-    
-    name: str = "single_incident_reader"
-    description: str = (
-        "Reads exactly ONE incident from the database for the specified incident_id. "
-        "This tool enforces single database access and returns complete incident data "
-        "for report generation. Use this instead of incident_database_tool for report generation."
-    )
-    args_schema: Type[BaseModel] = SingleIncidentReaderInput
-    
-    # Class-level cache to prevent multiple calls for same incident
-    _cache: Dict[str, Dict[str, Any]] = {}
-    _call_count: Dict[str, int] = {}  # Track number of calls per incident
-    
-    def _run(self, incident_id: str) -> str:
-        """Read a single incident from database with caching to prevent multiple calls."""
-        
-        # Clean the incident ID
-        incident_id = str(incident_id).strip()
-        
-        # Track call count for debugging
-        if incident_id not in self._call_count:
-            self._call_count[incident_id] = 0
-        self._call_count[incident_id] += 1
-        
-        print(f"[SingleIncidentReader DEBUG] Call #{self._call_count[incident_id]} for incident: {incident_id}")
-        
-        # Check cache first to prevent multiple database calls
-        if incident_id in self._cache:
-            cached_data = self._cache[incident_id]
-            print(f"[SingleIncidentReader DEBUG] Returning cached data for {incident_id}")
-            return json.dumps({
-                "success": True,
-                "message": f"Retrieved cached incident data for {incident_id}",
-                "data": cached_data,
-                "cached": True,
-                "call_count": self._call_count[incident_id]
-            }, indent=2)
-        
-        # If not cached, make single database call
-        print(f"[SingleIncidentReader DEBUG] Making database call for {incident_id}")
-        db_tool = IncidentDatabaseTool()
-        result_json = db_tool._run(operation="read", incident_id=incident_id)
-        
-        try:
-            result = json.loads(result_json)
-            
-            if result.get("success"):
-                # Cache the successful result
-                self._cache[incident_id] = result["data"]
-                
-                return json.dumps({
-                    "success": True,
-                    "message": f"Retrieved incident data for {incident_id}",
-                    "data": result["data"],
-                    "database_call_made": True,
-                    "cached": False,
-                    "call_count": self._call_count[incident_id]
-                }, indent=2)
-            else:
-                # If incident not found, return error with available incidents
-                return json.dumps({
-                    "success": False,
-                    "error": f"Incident '{incident_id}' not found",
-                    "message": "Use the available_incidents list to see what incidents exist",
-                    "available_incidents": result.get("available_incidents", []),
-                    "instruction": "Select one incident ID from the available_incidents list to generate a report"
-                }, indent=2)
-                
-        except json.JSONDecodeError:
-            return json.dumps({
-                "success": False,
-                "error": "Failed to parse database response",
-                "raw_response": result_json
-            }, indent=2)
-    
-    @classmethod
-    def clear_cache(cls):
-        """Clear the cache (useful for testing)."""
-        cls._cache.clear()
-        cls._call_count.clear()
-        
-    @classmethod 
-    def get_call_stats(cls):
-        """Get debugging statistics about tool calls."""
-        return {
-            "cached_incidents": list(cls._cache.keys()),
-            "call_counts": dict(cls._call_count)
-        }

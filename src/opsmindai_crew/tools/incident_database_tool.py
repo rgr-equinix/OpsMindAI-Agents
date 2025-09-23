@@ -4,6 +4,7 @@ from typing import Type, Dict, Any, Optional, ClassVar
 import json
 from datetime import datetime
 import time
+import os
 
 class IncidentDatabaseRequest(BaseModel):
     """Input schema for Incident Database Tool."""
@@ -53,13 +54,13 @@ class IncidentDatabaseRequest(BaseModel):
     )
 
 class IncidentDatabaseTool(BaseTool):
-    """Tool for managing incident data in a persistent in-memory database with CRUD operations."""
+    """Tool for managing incident data in a persistent file-based database with CRUD operations."""
 
     name: str = "incident_database_tool"
     description: str = (
-        "Persistent in-memory database tool for storing and retrieving incident data. "
+        "Persistent file-based database tool for storing and retrieving incident data. "
         "Supports CREATE, READ, UPDATE, LIST, and DELETE operations for incident records. "
-        "Data persists across automation runs using class-level storage. "
+        "Data persists to 'incidents_database.json' file across automation runs. "
         "Use 'create' to add new incidents, 'read' to get specific incidents by ID, "
         "'update' to modify existing incidents, 'list' to get all incidents, "
         "and 'delete' to remove incidents."
@@ -68,6 +69,7 @@ class IncidentDatabaseTool(BaseTool):
 
     # CLASS-LEVEL STORAGE for persistent data across automation runs
     _incident_store: ClassVar[Dict[str, Dict[str, Any]]] = {}
+    _db_file_path: ClassVar[str] = "incidents_database.json"
 
     def _run(
         self,
@@ -118,8 +120,44 @@ class IncidentDatabaseTool(BaseTool):
                 "operation": operation
             }, indent=2)
 
+    def _load_from_file(self) -> None:
+        """Load incidents from JSON file into memory store."""
+        try:
+            if os.path.exists(self._db_file_path):
+                with open(self._db_file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    # Update class-level store with file data
+                    self._incident_store.update(data)
+                    print(f"[DB] Loaded {len(data)} incidents from {self._db_file_path}")
+            else:
+                print(f"[DB] Database file {self._db_file_path} not found, starting with empty database")
+        except Exception as e:
+            print(f"[DB] Error loading from file: {e}")
+
+    def _save_to_file(self) -> None:
+        """Save incidents from memory store to JSON file."""
+        try:
+            print(f"[DB DEBUG] Attempting to save {len(self._incident_store)} incidents to {self._db_file_path}")
+            with open(self._db_file_path, 'w', encoding='utf-8') as f:
+                json.dump(self._incident_store, f, indent=2, ensure_ascii=False)
+            print(f"[DB] Saved {len(self._incident_store)} incidents to {self._db_file_path}")
+            print(f"[DB DEBUG] File exists after save: {os.path.exists(self._db_file_path)}")
+        except Exception as e:
+            print(f"[DB] Error saving to file: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _ensure_data_loaded(self) -> None:
+        """Ensure data is loaded from file if store is empty."""
+        if not self._incident_store:
+            self._load_from_file()
+
     def _generate_incident_id(self) -> str:
-        """Generate a unique incident ID using timestamp and milliseconds."""
+        """
+        Generate a unique incident ID using timestamp and milliseconds.
+        Format: INC-{timestamp_ms}
+        Example: INC-1758546061234
+        """
         timestamp_ms = int(time.time() * 1000)  # Milliseconds since epoch
         return f"INC-{timestamp_ms}"
 
@@ -138,9 +176,19 @@ class IncidentDatabaseTool(BaseTool):
     ) -> str:
         """Create a new incident record."""
         
-        # Auto-generate ID if not provided
+        # Ensure data is loaded from file
+        self._ensure_data_loaded()
+        
+        # Auto-generate ID if not provided, or validate format if provided
         if not incident_id:
             incident_id = self._generate_incident_id()
+        else:
+            # Validate that provided incident_id follows INC-{timestamp_ms} format
+            import re
+            if not re.match(r'^INC-\d+$', incident_id):
+                # If invalid format, generate a new compliant ID
+                print(f"[DB] Warning: Invalid incident ID format '{incident_id}', generating compliant ID")
+                incident_id = self._generate_incident_id()
         
         # Use current timestamp if not provided
         if not timestamp:
@@ -171,6 +219,9 @@ class IncidentDatabaseTool(BaseTool):
         # Store the incident (overwrite if exists - no "already exists" error)
         IncidentDatabaseTool._incident_store[incident_id] = incident_record
         
+        # Save to file for persistence
+        self._save_to_file()
+        
         return json.dumps({
             "success": True,
             "message": f"Incident '{incident_id}' created successfully",
@@ -179,6 +230,9 @@ class IncidentDatabaseTool(BaseTool):
 
     def _read_incident(self, incident_id: Optional[str]) -> str:
         """Read an incident record by ID."""
+        
+        # Ensure data is loaded from file
+        self._ensure_data_loaded()
         
         if not incident_id:
             return json.dumps({
@@ -212,6 +266,9 @@ class IncidentDatabaseTool(BaseTool):
         resolution_details: Optional[str]
     ) -> str:
         """Update an existing incident record."""
+        
+        # Ensure data is loaded from file
+        self._ensure_data_loaded()
         
         if not incident_id:
             return json.dumps({
@@ -271,6 +328,9 @@ class IncidentDatabaseTool(BaseTool):
                 "current_data": incident_record
             }, indent=2)
         
+        # Save to file for persistence
+        self._save_to_file()
+        
         return json.dumps({
             "success": True,
             "message": f"Incident '{incident_id}' updated successfully",
@@ -281,6 +341,9 @@ class IncidentDatabaseTool(BaseTool):
 
     def _list_incidents(self) -> str:
         """List all incident records."""
+        
+        # Ensure data is loaded from file
+        self._ensure_data_loaded()
         
         incident_count = len(IncidentDatabaseTool._incident_store)
         
@@ -309,6 +372,9 @@ class IncidentDatabaseTool(BaseTool):
     def _delete_incident(self, incident_id: Optional[str]) -> str:
         """Delete an incident record by ID."""
         
+        # Ensure data is loaded from file
+        self._ensure_data_loaded()
+        
         if not incident_id:
             return json.dumps({
                 "success": False,
@@ -323,6 +389,9 @@ class IncidentDatabaseTool(BaseTool):
             }, indent=2)
         
         deleted_record = IncidentDatabaseTool._incident_store.pop(incident_id)
+        
+        # Save to file for persistence
+        self._save_to_file()
         
         return json.dumps({
             "success": True,

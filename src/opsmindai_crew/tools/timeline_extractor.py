@@ -20,7 +20,11 @@ class TimelineExtractor(BaseTool):
     args_schema: Type[BaseModel] = TimelineExtractorInput
     
     def _run(self, incident_id: str) -> str:
-        """Extract timeline data for the specified incident."""
+        """Extract timeline data for the specified incident - Fast mode."""
+        import time
+        start_time = time.time()
+        
+        print(f"[TimelineExtractor] Starting timeline extraction for: {incident_id}")
         
         # Clean the incident ID
         incident_id = str(incident_id).strip()
@@ -33,34 +37,40 @@ class TimelineExtractor(BaseTool):
             incident_result = json.loads(incident_json)
             
             if not incident_result.get("success"):
+                elapsed = time.time() - start_time
+                print(f"[TimelineExtractor] Failed to get incident data in {elapsed:.2f}s")
                 return json.dumps({
                     "success": False,
                     "error": "Could not retrieve incident data",
                     "incident_id": incident_id,
-                    "details": incident_result.get("error", "Unknown error")
+                    "timeline_summary": "Timeline data unavailable - incident not found"
                 }, indent=2)
             
             incident_data = incident_result.get("data", {})
             timeline_raw = incident_data.get("timeline", "")
             
-            # Process timeline data
-            timeline_analysis = self._analyze_timeline(timeline_raw, incident_data)
+            # Quick timeline processing
+            if timeline_raw and timeline_raw.strip():
+                timeline_summary = f"Timeline available with {len(timeline_raw.split('.'))} key events"
+                timeline_data = timeline_raw[:500] + "..." if len(timeline_raw) > 500 else timeline_raw
+            else:
+                timeline_summary = "No detailed timeline data available for this incident"
+                timeline_data = "Timeline data not recorded"
+            
+            elapsed = time.time() - start_time
+            print(f"[TimelineExtractor] Completed in {elapsed:.2f}s")
             
             return json.dumps({
                 "success": True,
                 "incident_id": incident_id,
                 "timeline_present": bool(timeline_raw and timeline_raw.strip()),
-                "timeline_raw": timeline_raw,
-                "timeline_analysis": timeline_analysis,
-                "other_incident_fields": {
+                "timeline_summary": timeline_summary,
+                "timeline_data": timeline_data,
+                "incident_fields": {
                     "service_name": incident_data.get("service_name"),
                     "severity": incident_data.get("severity"),
                     "status": incident_data.get("status"),
-                    "commander": incident_data.get("commander"),
-                    "communication_lead": incident_data.get("communication_lead"),
-                    "playbook_applied": incident_data.get("playbook_applied"),
-                    "resolution_details": incident_data.get("resolution_details"),
-                    "timestamp": incident_data.get("timestamp")
+                    "resolution_details": incident_data.get("resolution_details")
                 }
             }, indent=2)
             
