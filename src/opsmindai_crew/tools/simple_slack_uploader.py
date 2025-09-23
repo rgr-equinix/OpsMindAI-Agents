@@ -335,18 +335,18 @@ class SimpleSlackUploader(BaseTool):
         
         message = f"""Please find the attached retrospective report for the incident {incident_id}.
 
-:id: **Incident ID:** {incident_id}
-:bar_chart: **Report Type:** {report_type}
-:date: **Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+*Incident ID:* {incident_id}
+*Report Type:* {report_type}
+*Generated:* {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
 
-:memo: **This report includes:**
+*This report includes:*
 • Detailed incident analysis
 • Timeline reconstruction  
 • Root cause identification
 • Actionable recommendations
 • Prevention strategies
 
-:point_right: Please review the comprehensive analysis and coordinate on the recommended action items."""
+Please review the comprehensive analysis and coordinate on the recommended action items."""
         
         return message
 
@@ -381,14 +381,14 @@ class SimpleSlackUploader(BaseTool):
         
         message = f"""Please find the attached retrospective report for the incident {incident_id}.
 
-{severity_emoji} **Incident ID:** {incident_id}
-{type_emoji} **Type:** {incident_type}
-:bar_chart: **Severity:** {severity}
-:white_check_mark: **Status:** {status}
-:computer: **Service:** {service}
-:date: **Report Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+*Incident ID:* {incident_id}
+*Type:* {incident_type}
+*Severity:* {severity}
+*Status:* {status}
+*Service:* {service}
+*Report Generated:* {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
 
-:memo: **This comprehensive report includes:**
+*This comprehensive report includes:*
 • Executive summary and incident overview
 • Detailed timeline reconstruction  
 • Technical root cause analysis
@@ -397,6 +397,6 @@ class SimpleSlackUploader(BaseTool):
 • Lessons learned and prevention strategies
 • Strategic recommendations and action items
 
-:point_right: Please review the detailed analysis and coordinate on implementing the recommended action items to prevent similar incidents."""
+Please review the detailed analysis and coordinate on implementing the recommended action items to prevent similar incidents."""
         
         return message
