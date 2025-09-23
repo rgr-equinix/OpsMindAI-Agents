@@ -19,8 +19,7 @@ from opsmindai_crew.tools.file_organizer_tool import FileOrganizerTool
 from opsmindai_crew.tools.pdf_generator_tool import PDFGeneratorTool
 from opsmindai_crew.tools.single_incident_reader import SingleIncidentReader
 from opsmindai_crew.tools.timeline_extractor import TimelineExtractor
-from opsmindai_crew.tools.slack_file_uploader import SlackFileUploader
-from opsmindai_crew.tools.file_to_base64_tool import FileToBase64Tool
+from opsmindai_crew.tools.simple_slack_uploader import SimpleSlackUploader
 
 
 
@@ -48,7 +47,7 @@ class OpsmindaiCrewCrew:
             max_rpm=None,
             max_execution_time=None,
             llm=LLM(
-                model="ollama/llama3.2:latest",
+                model="gpt-4o-mini",
                 temperature=0.7,
             ),
         )
@@ -73,7 +72,7 @@ class OpsmindaiCrewCrew:
             max_rpm=None,
             max_execution_time=None,
             llm=LLM(
-                model="ollama/llama3.2:latest",
+                model="gpt-4o-mini",
                 temperature=0.7,
             ),
         )
@@ -103,7 +102,7 @@ class OpsmindaiCrewCrew:
             max_rpm=None,
             max_execution_time=None,
             llm=LLM(
-                model="ollama/qwen2.5:7b",
+                model="gpt-4o-mini",
                 temperature=0.7,
             ),
         )
@@ -120,18 +119,17 @@ class OpsmindaiCrewCrew:
                 TimelineExtractor(),
                 FileOrganizerTool(), 
                 PDFGeneratorTool(),
-                FileToBase64Tool(),
-                SlackFileUploader()
+                SimpleSlackUploader()
             ],
-            reasoning=False,
+            reasoning=True,
             max_reasoning_attempts=None,
             inject_date=True,
-            allow_delegation=False,
+            allow_delegation=True,
             max_iter=25,
             max_rpm=None,
             max_execution_time=None,
             llm=LLM(
-                model="ollama/qwen2.5:7b", #"ollama/llama3.2:latest",
+                model="gpt-4o-mini",
                 temperature=0.7,
             ),
         )
