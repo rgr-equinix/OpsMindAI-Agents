@@ -121,10 +121,10 @@ class OpsmindaiCrewCrew:
                 PDFGeneratorTool(),
                 SimpleSlackUploader()
             ],
-            reasoning=False,
+            reasoning=True,
             max_reasoning_attempts=None,
             inject_date=True,
-            allow_delegation=False,
+            allow_delegation=True,
             max_iter=25,
             max_rpm=None,
             max_execution_time=None,
