@@ -78,12 +78,16 @@ orchestrate_incident_management_workflow:
     **STEPS:**
     1. Generate incident ID: INC-[type]-P1-[timestamp]
     2. Store complete incident data in database using incident ID as key
-    3. Output incident ID for resolution agent
+    3. Send Slack alert to "all-opsmindai" with incident details
+    4. Output incident ID for resolution agent
 
-    **TOOLS:** Use Current Date Tool, In-Memory Incident Database
+    **TOOLS:** Use Current Date Tool, In-Memory Incident Database, Slack Message Test Tool
   expected_output: "**ORCHESTRATION COMPLETION REPORT:**\n\n```json\n{\n  \"orchestration_status\":
     \"COMPLETED\",\n  \"incident_number\": \"INC-[incident_type]-[priority]-[timestamp]\",\n
-    \ \"database_status\": \"STORED\",\n  \"incident_summary\": {\n    \"type\": \"[incident_type]\",\n
+    \ \"database_status\": \"STORED\",\n  \"slack_posting\": {\n    \"channel\": \"all-opsmindai\",\n
+    \   \"success\": true,\n    \"message_format\": \"professional_formatted\",\n
+    \   \"message_id\": \"[slack message timestamp]\",\n    \"commander_mentioned\":
+    \"@johnwangle\"\n  },\n  \"incident_summary\": {\n    \"type\": \"[incident_type]\",\n
     \   \"priority\": \"[priority]\",\n    \"criticality\": \"[criticality_level]\",\n
     \   \"affected_component\": \"[component_name]\",\n    \"error_description\":
     \"[brief_description]\",\n    \"root_cause\": \"[specific_issue]\"\n  },\n  \"workflow_completion_time\":
@@ -91,7 +95,9 @@ orchestrate_incident_management_workflow:
     INC-[incident_type]-[priority]-[timestamp]**\n\n**SUCCESS CRITERIA:**\n- ✅ Incident
     data properly structured and stored in database\n- ✅ Incident ID generated for
     workflow continuity\n- ✅ Complete technical details preserved for downstream
-    tasks\n- ✅ Incident ID clearly provided for resolution workflow"
+    tasks\n- ✅ Professional, well-formatted Slack message posted\n- ✅ Clear incident information with emojis
+    and structure\n- ✅ @johnwangle mentioned as incident commander  \n- ✅ Complete
+    technical details included in readable format\n- ✅ Incident ID clearly provided for resolution workflow"
   agent: incident_orchestration_manager
   context:
   - analyze_application_log_content
@@ -157,7 +163,7 @@ generate_comprehensive_incident_retrospective_report:
        - Resolution details (verbatim; include PR URL if present)
        - Recommendations may only summarize known issues and actions referenced in `resolution_details`; otherwise say "Not available".
     5. Generate PDF via `pdf_generator` with filename `COE_[incident_id].pdf`.
-    6. Upload PDF directly to Slack via `simple_slack_uploader` using the PDF file path, with channel "all-opsmindai" and include the initial comment; ensure the file is visible in the channel.
+    6. Upload PDF directly to Slack via `simple_slack_uploader` using the PDF file path and channel "all-opsmindai"; do NOT specify an initial_comment to allow the tool to auto-generate a professional message with proper formatting.
     7. Return a JSON summary echoing all included fields and Slack upload result.
 
     **TOOLS:** Current Date Tool, In-Memory Incident Database, SingleIncidentReader, TimelineExtractor, PDFGeneratorTool, SimpleSlackUploader

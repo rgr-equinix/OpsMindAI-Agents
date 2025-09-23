@@ -66,6 +66,27 @@ class SimpleSlackUploader(BaseTool):
                     "file_id": None
                 })
 
+            # Auto-generate professional message if none provided or if generic message detected
+            filename = path_obj.name
+            generic_messages = [
+                "Here is the comprehensive retrospective report",
+                "Here is the retrospective report", 
+                "Please find the report",
+                "Report attached",
+                ""
+            ]
+            
+            should_generate_message = (
+                not initial_comment or 
+                initial_comment.strip() == "" or
+                any(generic in initial_comment for generic in generic_messages)
+            )
+            
+            if should_generate_message:
+                incident_id = self._extract_incident_id_from_filename(filename)
+                initial_comment = self._format_professional_message(incident_id, title)
+                print(f"[SimpleSlackUploader] Auto-generated professional message for {incident_id}")
+            
             # Get Slack bot token from environment
             slack_token = os.getenv('SLACK_BOT_AUTH')
             if not slack_token:
@@ -297,3 +318,85 @@ class SimpleSlackUploader(BaseTool):
         }
         
         return mime_types.get(file_extension, 'application/octet-stream')
+
+    def _format_professional_message(self, incident_id: str, title: str = "Retrospective Report", report_type: str = "Comprehensive Root Cause Analysis") -> str:
+        """
+        Format a professional Slack message with proper formatting and emojis.
+        
+        Args:
+            incident_id: The incident ID
+            title: Title of the report
+            report_type: Type of analysis report
+            
+        Returns:
+            Formatted Slack message string
+        """
+        from datetime import datetime
+        
+        message = f"""Please find the attached retrospective report for the incident {incident_id}.
+
+:id: **Incident ID:** {incident_id}
+:bar_chart: **Report Type:** {report_type}
+:date: **Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+
+:memo: **This report includes:**
+• Detailed incident analysis
+• Timeline reconstruction  
+• Root cause identification
+• Actionable recommendations
+• Prevention strategies
+
+:point_right: Please review the comprehensive analysis and coordinate on the recommended action items."""
+        
+        return message
+
+    def _extract_incident_id_from_filename(self, filename: str) -> str:
+        """Extract incident ID from filename like 'COE_INC-1758613681836.pdf'"""
+        import re
+        match = re.search(r'(INC-[0-9]+)', filename)
+        return match.group(1) if match else "Unknown"
+
+    def _format_custom_incident_message(self, incident_id: str, incident_type: str = "General", 
+                                       severity: str = "Unknown", status: str = "Resolved", 
+                                       service: str = "System") -> str:
+        """
+        Format a custom incident message with specific incident details.
+        """
+        from datetime import datetime
+        
+        severity_emoji = {
+            'critical': ':rotating_light:',
+            'high': ':warning:',
+            'medium': ':yellow_circle:',
+            'low': ':green_circle:'
+        }.get(severity.lower(), ':information_source:')
+        
+        type_emoji = {
+            'nullpointerexception': ':bug:',
+            'configuration issue': ':gear:',
+            'database': ':floppy_disk:',
+            'network': ':globe_with_meridians:',
+            'security': ':lock:'
+        }.get(incident_type.lower(), ':exclamation:')
+        
+        message = f"""Please find the attached retrospective report for the incident {incident_id}.
+
+{severity_emoji} **Incident ID:** {incident_id}
+{type_emoji} **Type:** {incident_type}
+:bar_chart: **Severity:** {severity}
+:white_check_mark: **Status:** {status}
+:computer: **Service:** {service}
+:date: **Report Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+
+:memo: **This comprehensive report includes:**
+• Executive summary and incident overview
+• Detailed timeline reconstruction  
+• Technical root cause analysis
+• Impact assessment and business analysis
+• Resolution actions and implementation details
+• Lessons learned and prevention strategies
+• Strategic recommendations and action items
+
+:point_right: Please review the detailed analysis and coordinate on implementing the recommended action items to prevent similar incidents."""
+        
+        return message
