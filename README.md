@@ -4,6 +4,11 @@
 
 This is a comprehensive incident management automation designed to automatically detect, orchestrate, resolve, and analyze application incidents. The system handles webhook alerts from Grafana, processes log content, creates GitHub PRs for code fixes, and generates professional retrospective reports.
 
+## 🏗️ Architecture Diagram
+
+![OpsMindAI Architecture](./docs/architecture-diagram.png)
+*Comprehensive incident management workflow showing the interaction between agents, tools, and external systems*
+
 ## 👥 Agents & Their Specializations
 
 ### 🔍 Alert Detection Agent
@@ -202,3 +207,11 @@ curl -X POST http://localhost:8080/webhook/incident-alert \
   "log_content": "2025-09-15 21:58:30 ERROR [http-nio-8889-exec-1] o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.NullPointerException: Cannot invoke \"String.toString()\" because \"risky\" is null] with root cause\njava.lang.NullPointerException: Cannot invoke \"String.toString()\" because \"risky\" is null\n\tat com.ai.mind.ops.DemoController.login(DemoController.java:40)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:568)"
 }'
 ````
+
+---
+
+## ❓ FAQ
+
+For frequently asked questions and detailed documentation, please visit:
+
+📋 **[OpsMindAI FAQ & Documentation](https://equinixinc-my.sharepoint.com/:w:/g/personal/rgr_equinix_com/ESRS7M5DAydFjsDL9fnVA1QBARFcWQ34vLkT7iaqNfphVA?e=hYBHD6)**
