@@ -6,7 +6,7 @@ This is a comprehensive incident management automation designed to automatically
 
 ## 🏗️ Architecture Diagram
 
-![OpsMindAI Architecture](./docs/architecture-diagram.png)
+![OpsMindAI Architecture](./knowledge/architecture%20diagram.jpeg)
 *Comprehensive incident management workflow showing the interaction between agents, tools, and external systems*
 
 ## 👥 Agents & Their Specializations
